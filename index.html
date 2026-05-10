@@ -133,10 +133,6 @@
             font-size: 1.3rem;
             font-weight: bold;
         }
-        .top-bar .logo i {
-            color: #0af;
-            margin-right: 10px;
-        }
         .top-actions {
             display: flex;
             gap: 15px;
@@ -183,9 +179,6 @@
             color: white;
             font-size: 1rem;
             outline: none;
-        }
-        .search-bar input::placeholder {
-            color: rgba(255,255,255,0.5);
         }
 
         /* GAMES SECTION */
@@ -313,6 +306,68 @@
             background: #1e3a8a;
         }
 
+        /* KEYBOARD MODAL */
+        .keyboard-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(32px);
+            z-index: 400;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+            opacity: 0;
+            transition: 0.2s;
+        }
+        .keyboard-modal.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        .keyboard-container {
+            background: #0f1422f2;
+            border-radius: 60px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+        .keyboard-input {
+            background: #1f2a4a;
+            border: 1px solid #0af;
+            padding: 15px;
+            border-radius: 60px;
+            color: white;
+            font-size: 1.2rem;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .keyboard-keys {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .key {
+            background: #2a3348;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .key:hover, .key.selected { background: #0af; transform: scale(1.05); }
+        .key-space { width: 200px; }
+        .key-backspace, .key-enter { background: #ff4444; width: 80px; }
+
         /* GAME OVERLAY */
         .game-canvas-overlay {
             position: fixed;
@@ -345,22 +400,7 @@
             box-shadow: 0 0 30px rgba(0,170,255,0.3);
         }
 
-        .toast-notify {
-            position: fixed;
-            bottom: 35px;
-            right: 35px;
-            background: #0a0f1cee;
-            backdrop-filter: blur(24px);
-            padding: 14px 32px;
-            border-radius: 60px;
-            border-right: 4px solid #0af;
-            z-index: 1000;
-        }
-        .toast-hidden { display: none; }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        /* MODALS */
         .settings-modal, .library-modal {
             position: fixed;
             top: 0;
@@ -389,7 +429,7 @@
             max-width: 500px;
             border: 1px solid #0af;
         }
-        .settings-card button {
+        .settings-card button, .library-card button {
             background: #ff4444;
             border: none;
             padding: 12px 24px;
@@ -405,6 +445,22 @@
             border-radius: 32px;
             background: rgba(0,0,0,0.5);
         }
+        .toast-notify {
+            position: fixed;
+            bottom: 35px;
+            right: 35px;
+            background: #0a0f1cee;
+            backdrop-filter: blur(24px);
+            padding: 14px 32px;
+            border-radius: 60px;
+            border-right: 4px solid #0af;
+            z-index: 1000;
+        }
+        .toast-hidden { display: none; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
@@ -418,7 +474,6 @@
         <p>Select a profile to continue</p>
     </div>
     <div id="accountsGrid" class="accounts-grid"></div>
-    <button id="createFirstAccountBtn" style="margin-top:30px; background:#0a5cff; border:none; padding:12px 32px; border-radius:60px; cursor:pointer;">+ Create New Account</button>
 </div>
 
 <!-- MAIN DASHBOARD -->
@@ -450,7 +505,7 @@
             <button id="playGameBtn" style="margin-top:20px; background:#0a5cff; border:none; padding:12px 32px; border-radius:60px; cursor:pointer;"><i class="fas fa-play"></i> Play Game</button>
         </div>
     </div>
-    <footer style="text-align:center; margin-top:30px; opacity:0.4;">🎮 PS5 Controller: L1/R1 = Switch Games | X = Play | Options = Control Center | △ = New Account</footer>
+    <footer style="text-align:center; margin-top:30px; opacity:0.4;">🎮 PS5 Controller: L1/R1 = Switch Games | X = Play | □ = Close | Options = Control Center | PS = Control Center</footer>
 </div>
 
 <!-- CONTROL CENTER -->
@@ -463,6 +518,16 @@
         <div class="cc-option" data-action="library"><i class="fas fa-book"></i> Library</div>
         <div class="cc-option" data-action="store"><i class="fas fa-store"></i> Kavan Store</div>
         <div class="cc-option" data-action="close"><i class="fas fa-power-off"></i> Close</div>
+    </div>
+</div>
+
+<!-- KEYBOARD MODAL -->
+<div id="keyboardModal" class="keyboard-modal">
+    <div class="keyboard-container">
+        <h3>Enter Account Name</h3>
+        <div class="keyboard-input" id="keyboardInput"></div>
+        <div class="keyboard-keys" id="keyboardKeys"></div>
+        <button id="keyboardConfirm" style="background:#0a5cff; border:none; padding:10px 30px; border-radius:60px; cursor:pointer;">Confirm</button>
     </div>
 </div>
 
@@ -491,10 +556,11 @@
             <h2><i class="fas fa-store"></i> Kavan Store</h2>
             <button id="closeStoreBtn" style="background:#ff4444; border:none; padding:8px 20px; border-radius:60px;">Close</button>
         </div>
-        <iframe id="storeIframe" src=""></iframe>
+        <iframe id="storeIframe" src="shop/shop.html"></iframe>
     </div>
 </div>
 
+<!-- GAME OVERLAY -->
 <div id="gameOverlay" class="game-canvas-overlay">
     <div class="game-container">
         <canvas id="gameCanvas" width="600" height="400"></canvas>
@@ -518,49 +584,38 @@
     let ballDX = 3, ballDY = -3;
     let leftPressed = false, rightPressed = false;
 
-    // =============== FILE SYSTEM ===============
+    // =============== AUTO SAVE ACCOUNTS TO acc.json ===============
     async function saveAccounts() {
         const data = JSON.stringify(accounts, null, 2);
-        if('showSaveFilePicker' in window) {
-            try {
-                const handle = await window.showSaveFilePicker({ suggestedName: 'acc.json', types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] });
-                const writable = await handle.createWritable();
-                await writable.write(data);
-                await writable.close();
-                showToast("Accounts saved to acc.json");
-            } catch(e) {}
-        } else {
-            const blob = new Blob([data], {type: 'application/json'});
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = 'acc.json';
-            a.click();
-        }
+        const blob = new Blob([data], {type: 'application/json'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'acc.json';
+        a.click();
+        URL.revokeObjectURL(a.href);
     }
 
     async function loadAccounts() {
-        if('showOpenFilePicker' in window) {
-            try {
-                const [handle] = await window.showOpenFilePicker({ types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }] });
-                const file = await handle.getFile();
-                const text = await file.text();
-                accounts = JSON.parse(text);
+        try {
+            const response = await fetch('acc.json');
+            if(response.ok) {
+                accounts = await response.json();
                 accounts.forEach(acc => { if(!acc.trophies) acc.trophies = []; });
-                showToast("Accounts loaded from acc.json");
                 renderSelectAccounts();
                 return true;
-            } catch(e) { return false; }
-        }
+            }
+        } catch(e) {}
         return false;
     }
 
     function initDefaultAccounts() {
         if(accounts.length === 0) {
             accounts = [{ id: "user1", name: "User_1", avatar: "fas fa-user", trophies: [] }];
+            saveAccounts();
         }
     }
 
-    // =============== GAMES ===============
+    // =============== LOAD GAMES WITH BACKGROUNDS ===============
     function saveGames() { localStorage.setItem('ps5_emulator_games', JSON.stringify(games)); }
     function loadGames() {
         const stored = localStorage.getItem('ps5_emulator_games');
@@ -573,14 +628,13 @@
         }
     }
 
-    function addTrophy(account, name, type) {
-        if(!account.trophies) account.trophies = [];
-        if(!account.trophies.find(t => t.name === name)) {
-            account.trophies.push({ name, type, date: new Date().toLocaleDateString() });
-            showToast(`🏆 New Trophy: ${name} (${type.toUpperCase()})`);
-            saveAccounts();
-            renderGameDetail();
-        }
+    async function loadGameBackground(gameId, bgBase64) {
+        if(bgBase64 && bgBase64.startsWith('data:image')) return bgBase64;
+        try {
+            const response = await fetch(`GameBG/${gameId}.b64`);
+            if(response.ok) return await response.text();
+        } catch(e) {}
+        return "";
     }
 
     // =============== MINI GAME ===============
@@ -701,20 +755,21 @@
             </div>
         `).join('');
         document.querySelectorAll('.game-tile').forEach(tile => {
-            tile.addEventListener('click', () => {
+            tile.addEventListener('click', async () => {
                 selectedGameId = tile.getAttribute('data-id');
                 renderGamesScroll(filter);
-                renderGameDetail();
+                await renderGameDetail();
             });
         });
     }
 
-    function renderGameDetail() {
+    async function renderGameDetail() {
         const game = games.find(g => g.id === selectedGameId);
         if(!game) return;
         document.getElementById('detailGameName').innerText = game.name;
         document.getElementById('detailGameDesc').innerHTML = `${game.description} | Size: ${game.size}`;
-        if(game.bg) document.getElementById('gameBgImage').style.backgroundImage = `url('${game.bg}')`;
+        const bgData = await loadGameBackground(game.id, game.bg);
+        if(bgData) document.getElementById('gameBgImage').style.backgroundImage = `url('${bgData}')`;
         const trophies = activeAccount?.trophies || [];
         const trophyDiv = document.getElementById('trophyList');
         if(trophies.length === 0) trophyDiv.innerHTML = `<div>No trophies earned yet</div>`;
@@ -723,13 +778,91 @@
         }
     }
 
+    function addTrophy(account, name, type) {
+        if(!account.trophies) account.trophies = [];
+        if(!account.trophies.find(t => t.name === name)) {
+            account.trophies.push({ name, type, date: new Date().toLocaleDateString() });
+            showToast(`🏆 New Trophy: ${name} (${type.toUpperCase()})`);
+            saveAccounts();
+            renderGameDetail();
+        }
+    }
+
+    // =============== KEYBOARD (Controller Compatible) ===============
+    let keyboardCallback = null;
+    let keyboardValue = "";
+    let keyboardSelectedIndex = 0;
+    let keyboardKeys = [];
+    
+    function openKeyboard(callback) {
+        keyboardCallback = callback;
+        keyboardValue = "";
+        document.getElementById('keyboardInput').innerText = "";
+        generateKeyboard();
+        document.getElementById('keyboardModal').classList.add('active');
+        keyboardSelectedIndex = 0;
+        updateKeyboardSelection();
+    }
+    
+    function generateKeyboard() {
+        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 _";
+        const container = document.getElementById('keyboardKeys');
+        keyboardKeys = [];
+        container.innerHTML = '';
+        for(let char of letters) {
+            const key = document.createElement('div');
+            key.className = 'key';
+            if(char === ' ') key.classList.add('key-space');
+            key.innerText = char === ' ' ? 'SPACE' : char;
+            key.onclick = () => addToKeyboard(char);
+            container.appendChild(key);
+            keyboardKeys.push(key);
+        }
+        const backspace = document.createElement('div');
+        backspace.className = 'key key-backspace';
+        backspace.innerText = '⌫';
+        backspace.onclick = () => { keyboardValue = keyboardValue.slice(0,-1); document.getElementById('keyboardInput').innerText = keyboardValue; };
+        container.appendChild(backspace);
+        keyboardKeys.push(backspace);
+    }
+    
+    function addToKeyboard(char) {
+        if(char === ' ') keyboardValue += ' ';
+        else keyboardValue += char;
+        document.getElementById('keyboardInput').innerText = keyboardValue;
+    }
+    
+    function updateKeyboardSelection() {
+        keyboardKeys.forEach((k, i) => {
+            if(i === keyboardSelectedIndex) k.classList.add('selected');
+            else k.classList.remove('selected');
+        });
+    }
+    
+    function selectKeyboardKey() {
+        if(keyboardSelectedIndex < keyboardKeys.length) {
+            keyboardKeys[keyboardSelectedIndex].click();
+        }
+    }
+    
+    function closeKeyboard(confirm) {
+        document.getElementById('keyboardModal').classList.remove('active');
+        if(confirm && keyboardCallback && keyboardValue.trim()) {
+            keyboardCallback(keyboardValue.trim());
+        }
+        keyboardCallback = null;
+    }
+
     // =============== ACTIONS ===============
-    function createNewAccount() {
-        const newName = `User_${Math.floor(Math.random()*1000)}`;
-        accounts.push({ id: "u"+Date.now(), name: newName, avatar: "fas fa-user", trophies: [] });
-        saveAccounts();
-        showToast(`✅ New account created: ${newName}`);
-        if(!document.getElementById('selectScreen').classList.contains('hidden')) renderSelectAccounts();
+    function createNewAccountWithKeyboard() {
+        openKeyboard((name) => {
+            if(name) {
+                accounts.push({ id: "u"+Date.now(), name: name, avatar: "fas fa-user", trophies: [] });
+                saveAccounts();
+                showToast(`✅ New account created: ${name}`);
+                renderSelectAccounts();
+            }
+        });
     }
 
     function switchAccount() {
@@ -743,7 +876,7 @@
     }
 
     function factoryReset() {
-        if(confirm("FACTORY RESET: This will delete ALL accounts and saved data. This action cannot be undone. Continue?")) {
+        if(confirm("FACTORY RESET: This will delete ALL accounts and saved data. Continue?")) {
             accounts = [];
             games = [];
             localStorage.clear();
@@ -753,6 +886,14 @@
             renderSelectAccounts();
             showToast("Factory reset completed");
         }
+    }
+
+    function closeAllModals() {
+        document.getElementById('settingsModal').classList.remove('active');
+        document.getElementById('libraryModal').classList.remove('active');
+        document.getElementById('storeModal').classList.remove('active');
+        document.getElementById('controlCenterMenu').classList.remove('active');
+        if(document.getElementById('gameOverlay').classList.contains('active')) closeMiniGame();
     }
 
     // =============== UI CONTROLS ===============
@@ -771,7 +912,7 @@
         if(ccIndex >= actions.length) return;
         const action = actions[ccIndex].getAttribute('data-action');
         if(action === 'switch') { switchAccount(); closeControlCenter(); }
-        else if(action === 'new') { createNewAccount(); closeControlCenter(); }
+        else if(action === 'new') { createNewAccountWithKeyboard(); closeControlCenter(); }
         else if(action === 'settings') { document.getElementById('settingsModal').classList.add('active'); closeControlCenter(); }
         else if(action === 'library') { openLibrary(); closeControlCenter(); }
         else if(action === 'store') { openStore(); closeControlCenter(); }
@@ -801,30 +942,68 @@
             if(!gamepadConnected){ gamepadConnected=true; document.getElementById('gpStatus').innerText='Connected'; showToast("PS5 Controller connected"); }
             const btns = pad.buttons;
             const axes = pad.axes;
+            
+            // Control Center navigation with left stick
             if(controlCenter.classList.contains('active')) {
                 if(axes[0] < -0.5 && !lastButtons.stickL) { ccIndex = Math.max(0, ccIndex-1); updateCCSelection(); lastButtons.stickL=true; setTimeout(()=>lastButtons.stickL=false,150); }
                 else if(axes[0] > 0.5 && !lastButtons.stickR) { ccIndex = Math.min(5, ccIndex+1); updateCCSelection(); lastButtons.stickR=true; setTimeout(()=>lastButtons.stickR=false,150); }
                 if(!(axes[0] < -0.5)) lastButtons.stickL=false;
                 if(!(axes[0] > 0.5)) lastButtons.stickR=false;
             }
+            
+            // Keyboard navigation
+            if(document.getElementById('keyboardModal').classList.contains('active')) {
+                if(axes[0] < -0.5 && !lastButtons.kbLeft) { keyboardSelectedIndex = Math.max(0, keyboardSelectedIndex-1); updateKeyboardSelection(); lastButtons.kbLeft=true; setTimeout(()=>lastButtons.kbLeft=false,150); }
+                else if(axes[0] > 0.5 && !lastButtons.kbRight) { keyboardSelectedIndex = Math.min(keyboardKeys.length-1, keyboardSelectedIndex+1); updateKeyboardSelection(); lastButtons.kbRight=true; setTimeout(()=>lastButtons.kbRight=false,150); }
+                if(!(axes[0] < -0.5)) lastButtons.kbLeft=false;
+                if(!(axes[0] > 0.5)) lastButtons.kbRight=false;
+                if(axes[1] < -0.5 && !lastButtons.kbUp) { let row = Math.floor(keyboardSelectedIndex / 10); let newRow = Math.max(0, row-1); keyboardSelectedIndex = newRow * 10 + (keyboardSelectedIndex % 10); keyboardSelectedIndex = Math.min(keyboardKeys.length-1, keyboardSelectedIndex); updateKeyboardSelection(); lastButtons.kbUp=true; setTimeout(()=>lastButtons.kbUp=false,150); }
+                if(axes[1] > 0.5 && !lastButtons.kbDown) { let row = Math.floor(keyboardSelectedIndex / 10); let newRow = row+1; keyboardSelectedIndex = newRow * 10 + (keyboardSelectedIndex % 10); keyboardSelectedIndex = Math.min(keyboardKeys.length-1, keyboardSelectedIndex); updateKeyboardSelection(); lastButtons.kbDown=true; setTimeout(()=>lastButtons.kbDown=false,150); }
+                if(!(axes[1] < -0.5)) lastButtons.kbUp=false;
+                if(!(axes[1] > 0.5)) lastButtons.kbDown=false;
+            }
+            
+            // L1/R1 for game switching
             if(btns[5] && btns[5].pressed && !lastButtons.r1) { lastButtons.r1=true; let idx = games.findIndex(g=>g.id===selectedGameId); let next = (idx+1)%games.length; selectedGameId=games[next].id; renderGamesScroll(); renderGameDetail(); setTimeout(()=>lastButtons.r1=false,200); }
             if(!btns[5] || !btns[5].pressed) lastButtons.r1=false;
             if(btns[4] && btns[4].pressed && !lastButtons.l1) { lastButtons.l1=true; let idx = games.findIndex(g=>g.id===selectedGameId); let prev = (idx-1+games.length)%games.length; selectedGameId=games[prev].id; renderGamesScroll(); renderGameDetail(); setTimeout(()=>lastButtons.l1=false,200); }
             if(!btns[4] || !btns[4].pressed) lastButtons.l1=false;
-            if(btns[3] && btns[3].pressed && !lastButtons.tri) { lastButtons.tri=true; createNewAccount(); setTimeout(()=>lastButtons.tri=false,200); }
+            
+            // Triangle (△) = new account
+            if(btns[3] && btns[3].pressed && !lastButtons.tri) { lastButtons.tri=true; createNewAccountWithKeyboard(); setTimeout(()=>lastButtons.tri=false,200); }
             if(!btns[3] || !btns[3].pressed) lastButtons.tri=false;
-            if(btns[2] && btns[2].pressed && !lastButtons.sq) { lastButtons.sq=true; if(document.getElementById('gameOverlay').classList.contains('active')) closeMiniGame(); setTimeout(()=>lastButtons.sq=false,200); }
+            
+            // Square (□) = close everything
+            if(btns[2] && btns[2].pressed && !lastButtons.sq) { lastButtons.sq=true; closeAllModals(); if(document.getElementById('gameOverlay').classList.contains('active')) closeMiniGame(); setTimeout(()=>lastButtons.sq=false,200); }
             if(!btns[2] || !btns[2].pressed) lastButtons.sq=false;
+            
+            // Options = control center
             if(btns[9] && btns[9].pressed && !lastButtons.opt) { lastButtons.opt=true; openControlCenter(); setTimeout(()=>lastButtons.opt=false,200); }
             if(!btns[9] || !btns[9].pressed) lastButtons.opt=false;
+            
+            // PS Button (Home) = control center (index 16)
+            if(btns[16] && btns[16].pressed && !lastButtons.ps) { lastButtons.ps=true; openControlCenter(); setTimeout(()=>lastButtons.ps=false,200); }
+            if(!btns[16] || !btns[16].pressed) lastButtons.ps=false;
+            
+            // X = select/confirm
             if(btns[0] && btns[0].pressed && !lastButtons.x) {
                 lastButtons.x=true;
                 if(controlCenter.classList.contains('active')) selectCCAction();
-                else if(selectedGameId) startMiniGame();
+                else if(document.getElementById('keyboardModal').classList.contains('active')) selectKeyboardKey();
+                else if(selectedGameId && !document.getElementById('gameOverlay').classList.contains('active')) startMiniGame();
                 setTimeout(()=>lastButtons.x=false,200);
             }
             if(!btns[0] || !btns[0].pressed) lastButtons.x=false;
             
+            // Circle (O) = cancel/close keyboard
+            if(btns[1] && btns[1].pressed && !lastButtons.circle) {
+                lastButtons.circle=true;
+                if(document.getElementById('keyboardModal').classList.contains('active')) closeKeyboard(false);
+                setTimeout(()=>lastButtons.circle=false,200);
+            }
+            if(!btns[1] || !btns[1].pressed) lastButtons.circle=false;
+            
+            // In-game paddle controls
             if(gameRunning && document.getElementById('gameOverlay').classList.contains('active')) {
                 leftPressed = axes[0] < -0.3;
                 rightPressed = axes[0] > 0.3;
@@ -843,7 +1022,6 @@
     }
 
     // Event Listeners
-    document.getElementById('createFirstAccountBtn')?.addEventListener('click', createNewAccount);
     document.getElementById('playGameBtn')?.addEventListener('click', () => { if(selectedGameId) startMiniGame(); });
     document.getElementById('closeGameBtn')?.addEventListener('click', closeMiniGame);
     document.getElementById('resetFactoryBtn')?.addEventListener('click', factoryReset);
@@ -858,14 +1036,19 @@
         sb.style.display = sb.style.display === 'none' ? 'block' : 'none';
     });
     document.getElementById('searchInput')?.addEventListener('input', (e) => renderGamesScroll(e.target.value));
+    document.getElementById('keyboardConfirm')?.addEventListener('click', () => closeKeyboard(true));
 
     window.addEventListener("gamepadconnected", () => showToast("Controller connected"));
     window.addEventListener("gamepaddisconnected", () => showToast("Controller disconnected"));
     if('getGamepads' in navigator) pollGamepad();
 
-    loadAccounts().then(() => { if(accounts.length === 0) initDefaultAccounts(); renderSelectAccounts(); });
-    loadGames();
-    if(games.length && !selectedGameId) selectedGameId = games[0].id;
+    (async () => {
+        const loaded = await loadAccounts();
+        if(!loaded) initDefaultAccounts();
+        renderSelectAccounts();
+        loadGames();
+        if(games.length && !selectedGameId) selectedGameId = games[0].id;
+    })();
 </script>
 </body>
 </html>
