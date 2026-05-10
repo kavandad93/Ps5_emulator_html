@@ -1,1 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kavan Store - PS5 Games</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0a0f1a;
+            color: #fff;
+            padding: 30px;
+        }
+        .store-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+        }
+        .game-card {
+            background: rgba(20, 28, 48, 0.8);
+            backdrop-filter: blur(16px);
+            border-radius: 32px;
+            padding: 20px;
+            border: 1px solid rgba(0,170,255,0.3);
+            transition: 0.2s;
+        }
+        .game-card:hover {
+            transform: translateY(-5px);
+            border-color: #0af;
+        }
+        .game-card h3 {
+            margin-bottom: 10px;
+        }
+        .game-card p {
+            opacity: 0.7;
+            margin-bottom: 15px;
+        }
+        .download-btn {
+            background: #0a5cff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 40px;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .download-btn:hover {
+            background: #2e7eff;
+        }
+        .search-box {
+            margin-bottom: 30px;
+        }
+        .search-box input {
+            background: rgba(20, 30, 50, 0.8);
+            border: 1px solid #0af;
+            padding: 12px 20px;
+            border-radius: 60px;
+            color: white;
+            width: 300px;
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+<div class="store-container">
+    <h1><i class="fas fa-store"></i> Kavan Store</h1>
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search games...">
+    </div>
+    <div class="games-grid" id="gamesGrid"></div>
+</div>
 
+<script>
+    const availableGames = [
+        { id: "astro", name: "Astro's Playroom", description: "Adventure in the world of DualSense", size: "11.2 GB", price: "Free", gameFile: "Astro.game" },
+        { id: "minecraft", name: "Minecraft", description: "Endless creativity and survival", size: "1.9 GB", price: "$29.99", gameFile: "Minecraft.game" },
+        { id: "spiderman", name: "Spider-Man: Miles Morales", description: "Become the new Spider-Man", size: "45 GB", price: "$49.99", gameFile: "SpiderMan.game" },
+        { id: "gt7", name: "Gran Turismo 7", description: "The ultimate racing experience", size: "110 GB", price: "$69.99", gameFile: "GranTurismo7.game" }
+    ];
+
+    function renderGames(filter = "") {
+        const container = document.getElementById('gamesGrid');
+        const filtered = availableGames.filter(g => g.name.toLowerCase().includes(filter.toLowerCase()));
+        container.innerHTML = filtered.map(game => `
+            <div class="game-card">
+                <h3>${game.name}</h3>
+                <p>${game.description}</p>
+                <p><strong>Size:</strong> ${game.size} | <strong>Price:</strong> ${game.price}</p>
+                <button class="download-btn" data-game='${JSON.stringify(game)}'>Download Game</button>
+            </div>
+        `).join('');
+        
+        document.querySelectorAll('.download-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const game = JSON.parse(btn.getAttribute('data-game'));
+                downloadGame(game);
+            });
+        });
+    }
+
+    function downloadGame(game) {
+        const gameData = {
+            name: game.name,
+            description: game.description,
+            size: game.size,
+            age: "7+",
+            trophys: ["Bronze: Starter", "Silver: Explorer", "Gold: Master", "Platinum: Legend"],
+            pic: "",
+            bg: "",
+            gameCode: "breaker"
+        };
+        
+        const blob = new Blob([JSON.stringify(gameData, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = game.gameFile;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        alert(`Downloading ${game.name}...\nSave the .game file and install it in the PS5 Emulator using the "Install .game" button.`);
+    }
+
+    document.getElementById('searchInput').addEventListener('input', (e) => renderGames(e.target.value));
+    renderGames();
+</script>
+</body>
+</html>
